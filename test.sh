@@ -26,4 +26,10 @@ assert 4 '(3+5)/2'
 assert 10 '-10+20'
 assert 30 '+20-(-10)'
 
+assert 1 '1 < 2'
+assert 0 '(1+4*5) >= 20 == 0'
+assert 3 '(1 == 1) * 3'
+
+
+
 echo OK
