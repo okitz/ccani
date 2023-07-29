@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 typedef enum {
   TK_RESERVED, // 記号
   TK_NUM,      // 整数トークン
@@ -20,6 +21,9 @@ struct Token {
   char *str;      // トークン文字列
 };
 
+// 入力プログラム
+char *user_input;
+
 // 現在着目しているトークン
 Token *token;
 
@@ -28,6 +32,18 @@ Token *token;
 void error(char *fmt, ...){
   va_list ap;
   va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+void error_at(char *loc, char *fmt, ...){
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " ");
+  fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
@@ -44,14 +60,14 @@ bool consume(char op) {
 // 次のトークンが期待する記号opのときには読み進めて真を返す
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
-    error("'%c'ではありません", op);
+    error_at(token->str, "expected '%c'", op);
   token = token->next;
 }
 
 // 次のトークンが数値の場合、読み進めて数値を返す
 int expect_number() {
   if (token->kind != TK_NUM)
-    error("数ではありません");
+    error_at(token->str, "expected a number");
   int val = token->val;
   token = token->next;
   return val;
@@ -62,7 +78,7 @@ bool at_eof() {
 }
 
 // curの後ろに繋がる新しいトークンの作成
-Token *new_Token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;
@@ -71,7 +87,8 @@ Token *new_Token(TokenKind kind, Token *cur, char *str) {
 }
 
 // 入力文字列pをトークナイズ
-Token *tokenize(char *p) {
+Token *tokenize() {
+  char *p = user_input;
   Token head;
   head.next = NULL;
   Token *cur = &head;
@@ -83,30 +100,32 @@ Token *tokenize(char *p) {
     }
 
     if(*p == '+' || *p == '-') {
-      cur = new_Token(TK_RESERVED, cur, p++);
+      cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
 
     if(isdigit(*p)) {
-      cur = new_Token(TK_NUM, cur, p);
+      cur = new_token(TK_NUM, cur, p);
       cur->val = strtol(p, &p, 10);
       continue;
     }
-    error("トークナイズできません");
+
+    error_at(p, "invalid token");
   }
 
-  new_Token(TK_EOF, cur, p);
+  new_token(TK_EOF, cur, p);
   return head.next;
 }
 
 
 int main(int argc, char **argv) {
   if (argc != 2) {
-    fprintf(stderr, "引数の個数が正しくありません\n");
+    fprintf(stderr, "%s: invalid number of arguments", argv[0]);
     return 1;
   }
 
-  token = tokenize(argv[1]);
+  user_input = argv[1];
+  token = tokenize();
 
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
@@ -122,8 +141,6 @@ int main(int argc, char **argv) {
 
     expect('-');
     printf("  sub rax, %d\n", expect_number());
-
-    return 1;
   }
 
   printf("  ret\n");
