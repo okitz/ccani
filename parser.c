@@ -133,6 +133,23 @@ Node *stmt() {
     if (consume_keyword("else")) {
       node->els = stmt();
     }
+  } else if (consume_keyword("while")) {
+    node = new_node(ND_FOR);
+    expect_punct("(");
+    node->cond = expr();
+    expect_punct(")");
+    node->then = stmt();
+
+  } else if (consume_keyword("for")) {
+    node = new_node(ND_FOR);
+    expect_punct("(");
+    node->init = expr();
+    expect_punct(";");
+    node->cond = expr();
+    expect_punct(";");
+    node->inc = expr();
+    expect_punct(")");
+    node->then = stmt();
   } else {  // 末尾に ; が必要な文
     if (consume_keyword("return")) {
       node = new_node_unitary(ND_RETURN, expr());

@@ -38,7 +38,7 @@ assert 3 '___a___ = 2;___a___ + 1;'
 assert 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
 assert 22 'returner = 3; return b = 5 * 6 - 8;  a + b / 2;'
 
-assert 2 'if(a = 10) return 1 + 1; else return 0;'
+assert 2 'if(a = 10) return 1 + 1;'
 assert 4 'if(1 > 4) return 1; else return 2*2;'
 
 echo OK
