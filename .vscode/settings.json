@@ -3,6 +3,7 @@
     "files.associations": {
         "stdlib.h": "c",
         "ctype.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "ccani.h": "c"
     },
 }

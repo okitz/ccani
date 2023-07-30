@@ -2,7 +2,7 @@
 
 // エラーを投げる関数
 // printfと同じインタフェース
-void error(char *fmt, ...){
+void error(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);
@@ -45,7 +45,7 @@ void gen(Node *node) {
       printf("  push rdi\n");
       return;
   }
-  
+
   // 以下は右左辺の区別がない処理
 
   gen(node->lhs);

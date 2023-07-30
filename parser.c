@@ -1,10 +1,5 @@
 #include "ccani.h"
 
-
-//-----------------------------------------------------------------------------------------
-//----------------------------------- parser ----------------------------------
-//-----------------------------------------------------------------------------------------
-
 // program    = stmt*
 // stmt       = expr ";" | "return" expr ";"
 // expr       = assign
@@ -15,15 +10,15 @@
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
 // primary    = num | ident | "(" expr ")"
-// 
+//
 
 typedef struct LVar LVar;
 
 struct LVar {
-  LVar *next; // 次の変数 or NULL
-  char *name; // 変数名;
-  int len;    // 名前の長さ
-  int offset; // rbpからのオフセット
+  LVar *next;  // 次の変数 or NULL
+  char *name;  // 変数名;
+  int len;     // 名前の長さ
+  int offset;  // rbpからのオフセット
 };
 
 LVar *locals;
@@ -31,18 +26,17 @@ LVar *locals;
 // 変数を名前で検索し、見つからなければNULLを返す
 LVar *find_lvar(Token *tok) {
   LVar *lvar = locals;
-  for (LVar *lvar = locals; lvar; lvar = lvar->next){
+  for (LVar *lvar = locals; lvar; lvar = lvar->next) {
     if (lvar->len == tok->len && !memcmp(tok->str, lvar->name, lvar->len))
       return lvar;
   }
-  
+
   return NULL;
 }
 
 // 次のトークンが期待する記号opのときには読み進めて真を返す
 bool consume_reserved(char *op) {
-  if (token->kind != TK_RESERVED ||
-      strlen(op) != token->len ||
+  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     return false;
   token = token->next;
@@ -51,8 +45,7 @@ bool consume_reserved(char *op) {
 
 // 次のトークンが期待する記号opのときには読み進める
 void expect_reserved(char *op) {
-  if (token->kind != TK_RESERVED ||
-      strlen(op) != token->len ||
+  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     error_at(token->str, "expected %s", op);
   token = token->next;
@@ -60,9 +53,8 @@ void expect_reserved(char *op) {
 
 // 次のトークンが識別子のときには読み進めてオフセットを返す
 int consume_ident() {
-  if (token->kind != TK_IDENT)
-    return -1;
-  
+  if (token->kind != TK_IDENT) return -1;
+
   LVar *lvar = find_lvar(token);
   if (!lvar) {
     lvar = calloc(1, sizeof(LVar));
@@ -76,19 +68,15 @@ int consume_ident() {
   return lvar->offset;
 }
 
-
 // 次のトークンが数値の場合、読み進めて数値を返す
 int expect_number() {
-  if (token->kind != TK_NUM)
-    error_at(token->str, "expected a number");
+  if (token->kind != TK_NUM) error_at(token->str, "expected a number");
   int val = token->val;
   token = token->next;
   return val;
 }
 
-bool at_eof() {
-  return token->kind == TK_EOF;
-}
+bool at_eof() { return token->kind == TK_EOF; }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
@@ -116,7 +104,7 @@ Node *code[100];
 
 void program() {
   int i = 0;
-  while (!at_eof()){
+  while (!at_eof()) {
     code[i++] = stmt();
   }
   code[i] = NULL;
@@ -139,14 +127,11 @@ Node *stmt() {
   return node;
 }
 
-Node *expr() {
-  Node *node = assign();
-}
+Node *expr() { Node *node = assign(); }
 
 Node *assign() {
   Node *node = equality();
-  if (consume_reserved("="))
-    node = new_node(ND_ASSIGN, node, assign());
+  if (consume_reserved("=")) node = new_node(ND_ASSIGN, node, assign());
   return node;
 }
 
@@ -213,20 +198,17 @@ Node *unary() {
     return new_node(ND_SUB, new_node_num(0), primary());
   else
     return primary();
-
 }
 
 Node *primary() {
-  if (consume_reserved("(")){
+  if (consume_reserved("(")) {
     Node *node = expr();
     expect_reserved(")");
     return node;
   }
 
-  
   int offset = consume_ident();
-  if (offset >= 0)
-    return new_node_ident(offset);
+  if (offset >= 0) return new_node_ident(offset);
 
   int val = expect_number();
   return new_node_num(val);
