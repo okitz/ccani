@@ -14,7 +14,7 @@
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
-// primary    = num | ident | "(" expr ")"
+// primary    = num | ident ("(" (expr)* ")")? | "(" expr ")"
 //
 
 typedef struct LVar LVar;
@@ -39,21 +39,15 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
-// 次のトークンが識別子のときには読み進めてオフセットを返す
-int consume_ident() {
-  if (token->kind != TK_IDENT) return -1;
-
-  LVar *lvar = find_lvar(token);
-  if (!lvar) {
-    lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals;
-    lvar->name = token->str;
-    lvar->len = token->len;
-    lvar->offset = locals ? (locals->offset + 8) : 0;
-    locals = lvar;
+// 次のトークンが識別子のときには読み進めてトークンを返す
+Token *consume_ident() {
+  if (token->kind != TK_IDENT)
+    return NULL;
+  else {
+    Token *old_token = token;
+    token = token->next;
+    return old_token;
   }
-  token = token->next;
-  return lvar->offset;
 }
 
 // 次のトークンが期待する記号pcのときには読み進めて真を返す
@@ -73,6 +67,7 @@ void expect_punct(char *pc) {
   token = token->next;
 }
 
+// 次のトークンが期待するキーワードのときには読み進めて真を返す
 bool consume_keyword(char *kw) {
   if (token->kind != TK_KEYWORD || strlen(kw) != token->len ||
       memcmp(token->str, kw, token->len))
@@ -254,10 +249,37 @@ Node *primary() {
     return node;
   }
 
-  int offset = consume_ident();
-  if (offset >= 0) {
-    node = new_node(ND_LVAR);
-    node->offset = offset;
+  Token *tok = consume_ident();
+  if (tok) {
+    if (consume_punct("(")) {
+      node = new_node(ND_FUNCALL);
+      node->fname = calloc(tok->len + 1, sizeof(char));
+      strncpy(node->fname, tok->str, tok->len);
+      node->fname[tok->len] = '\x0';
+      Node *vector = node;
+      if (!consume_punct(")")) {
+        for (;;) {
+          vector->next = expr();
+          vector = vector->next;
+          if (consume_punct(")")) {
+            break;
+          } else
+            expect_punct(",");
+        }
+      }
+    } else {
+      node = new_node(ND_LVAR);
+      LVar *lvar = find_lvar(tok);
+      if (!lvar) {
+        lvar = calloc(1, sizeof(LVar));
+        lvar->next = locals;
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        lvar->offset = locals ? (locals->offset + 8) : 0;
+        locals = lvar;
+      }
+      node->offset = lvar->offset;
+    }
     return node;
   }
 

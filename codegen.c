@@ -1,5 +1,7 @@
 #include "ccani.h"
 
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 // エラーを投げる関数
 // printfと同じインタフェース
 void error(char *fmt, ...) {
@@ -63,6 +65,24 @@ void gen(Node *node) {
       gen_lval(node);
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
+      printf("  push rax\n");
+      return;
+    case ND_FUNCALL:
+      Node *arg = node->next;
+      int arg_cnt = 0;
+      while (arg) {
+        gen(arg);
+        arg_cnt++;
+        arg = arg->next;
+      }
+      for (int i = arg_cnt - 1; i >= 0; i--) {
+        printf("  pop %s\n", argreg[i]);
+      }
+
+      // printf("  and rsp, ");
+      printf("  call %s\n", node->fname);
+
+      // 評価した値がつねにスタックトップに残るようにする
       printf("  push rax\n");
       return;
     case ND_ASSIGN:

@@ -4,7 +4,7 @@ assert() {
   input="$2"
 
   ./ccani "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s funcall_test.c
   ./tmp
   actual="$?"
 
@@ -42,5 +42,7 @@ assert 2 'if(a = 10) return 1 + 1;'
 assert 4 'if(1 > 4) return 1; else return 2*2;'
 assert 64 'i = 1;while(i < 50){i = i*2;} return i;'
 assert 34 's=0;m=1;for(i = 1;i <= 4;i=i+1){s=s+i;m=m*i;} return s+m;'
+
+assert 11 'foo(34, 23);'
 
 echo OK

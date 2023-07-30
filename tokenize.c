@@ -75,7 +75,7 @@ void tokenize() {
       continue;
     }
 
-    if (strchr("+-*/()><={};", *p)) {
+    if (strchr("+-*/()><={};,", *p)) {
       cur = new_token(TK_PUNCT, cur, p++, 1);
       continue;
     }
@@ -96,7 +96,6 @@ void tokenize() {
     if (isVaildVarChar(*p) && !('0' <= *p && *p <= '9')) {
       int len = 1;
       while (isVaildVarChar(p[len])) len++;
-
       cur = new_token(TK_IDENT, cur, p, len);
       p += len;
       continue;
