@@ -51,21 +51,29 @@ int consume_ident() {
   return lvar->offset;
 }
 
-// 次のトークンが期待する記号opのときには読み進めて真を返す
-bool consume_punct(char *op) {
-  if (token->kind != TK_PUNCT || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
+// 次のトークンが期待する記号pcのときには読み進めて真を返す
+bool consume_punct(char *pc) {
+  if (token->kind != TK_PUNCT || strlen(pc) != token->len ||
+      memcmp(token->str, pc, token->len))
     return false;
   token = token->next;
   return true;
 }
 
 // 次のトークンが期待する記号opのときには読み進める
-void expect_punct(char *op) {
-  if (token->kind != TK_PUNCT || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    error_at(token->str, "expected %s", op);
+void expect_punct(char *pc) {
+  if (token->kind != TK_PUNCT || strlen(pc) != token->len ||
+      memcmp(token->str, pc, token->len))
+    error_at(token->str, "expected %s", pc);
   token = token->next;
+}
+
+bool consume_keyword(char *kw) {
+  if (token->kind != TK_KEYWORD || strlen(kw) != token->len ||
+      memcmp(token->str, kw, token->len))
+    return false;
+  token = token->next;
+  return true;
 }
 
 // 次のトークンが数値の場合、読み進めて数値を返す
@@ -78,7 +86,14 @@ int expect_number() {
 
 bool at_eof() { return token->kind == TK_EOF; }
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node_ident(int offset) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_LVAR;
+  node->offset = offset;
+  return node;
+}
+
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
   node->lhs = lhs;
@@ -86,17 +101,17 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   return node;
 }
 
+Node *new_node_unitary(NodeKind kind, Node *lhs) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = kind;
+  node->lhs = lhs;
+  return node;
+}
+
 Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
   node->val = val;
-  return node;
-}
-
-Node *new_node_ident(int offset) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_LVAR;
-  node->offset = offset;
   return node;
 }
 
@@ -113,12 +128,8 @@ void program() {
 Node *stmt() {
   Node *node;
 
-  // 本当はconsume_return(), new_node_returnを作りたい
-  if (token->kind == TK_KEYWORD) {
-    token = token->next;
-    node = calloc(1, sizeof(Node));
-    node->kind = ND_RETURN;
-    node->lhs = expr();
+  if (consume_keyword("return")) {
+    node = new_node_unitary(ND_RETURN, expr());
   } else {
     node = expr();
   }
@@ -131,7 +142,7 @@ Node *expr() { Node *node = assign(); }
 
 Node *assign() {
   Node *node = equality();
-  if (consume_punct("=")) node = new_node(ND_ASSIGN, node, assign());
+  if (consume_punct("=")) node = new_node_binary(ND_ASSIGN, node, assign());
   return node;
 }
 
@@ -140,9 +151,9 @@ Node *equality() {
 
   for (;;) {
     if (consume_punct("=="))
-      node = new_node(ND_EQ, node, add());
+      node = new_node_binary(ND_EQ, node, add());
     else if (consume_punct("!="))
-      node = new_node(ND_NE, node, add());
+      node = new_node_binary(ND_NE, node, add());
     else
       return node;
   }
@@ -153,13 +164,13 @@ Node *relational() {
 
   for (;;) {
     if (consume_punct("<"))
-      node = new_node(ND_LT, node, add());
+      node = new_node_binary(ND_LT, node, add());
     else if (consume_punct("<="))
-      node = new_node(ND_LE, node, add());
+      node = new_node_binary(ND_LE, node, add());
     else if (consume_punct(">"))
-      node = new_node(ND_LT, add(), node);
+      node = new_node_binary(ND_LT, add(), node);
     else if (consume_punct(">="))
-      node = new_node(ND_LE, add(), node);
+      node = new_node_binary(ND_LE, add(), node);
     else
       return node;
   }
@@ -170,9 +181,9 @@ Node *add() {
 
   for (;;) {
     if (consume_punct("+"))
-      node = new_node(ND_ADD, node, mul());
+      node = new_node_binary(ND_ADD, node, mul());
     else if (consume_punct("-"))
-      node = new_node(ND_SUB, node, mul());
+      node = new_node_binary(ND_SUB, node, mul());
     else
       return node;
   }
@@ -183,9 +194,9 @@ Node *mul() {
 
   for (;;) {
     if (consume_punct("*"))
-      node = new_node(ND_MUL, node, unary());
+      node = new_node_binary(ND_MUL, node, unary());
     else if (consume_punct("/"))
-      node = new_node(ND_DIV, node, unary());
+      node = new_node_binary(ND_DIV, node, unary());
     else
       return node;
   }
@@ -195,7 +206,7 @@ Node *unary() {
   if (consume_punct("+"))
     return primary();
   else if (consume_punct("-"))
-    return new_node(ND_SUB, new_node_num(0), primary());
+    return new_node_binary(ND_SUB, new_node_num(0), primary());
   else
     return primary();
 }

@@ -26,11 +26,31 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
+struct Keyword {
+  char *keyword;
+  int len;
+};
+
 bool startswith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
 bool isVaildVarChar(char c) {
   return ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || (c == '_') ||
          ('a' <= c && c <= 'z');
+}
+
+// *pがキーワードなら長さを返す
+int isKeyword(char *p) {
+  const struct Keyword KEYWORDS[2] = {{"return", 6}, {"if", 2}};
+  int len = 0;
+  for (int i = 0; i < 2; i++) {
+    char *kw_str = KEYWORDS[i].keyword;
+    int kw_len = KEYWORDS[i].len;
+    if (startswith(p, kw_str) && !isVaildVarChar(p[kw_len])) {
+      len = kw_len;
+      break;
+    }
+  }
+  return len;
 }
 
 // 入力文字列pをトークナイズ
@@ -58,9 +78,10 @@ void tokenize() {
       continue;
     }
 
-    if (startswith(p, "return") && !isVaildVarChar(p[6])) {
-      cur = new_token(TK_KEYWORD, cur, p, 6);
-      p += 6;
+    int kw_len = isKeyword(p);
+    if (kw_len) {
+      cur = new_token(TK_KEYWORD, cur, p, kw_len);
+      p += kw_len;
       continue;
     }
 
