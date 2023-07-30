@@ -51,6 +51,7 @@ typedef enum {
   ND_RETURN,  // return Statement
   ND_IF,      // if Statement
   ND_FOR,     // for/while Statement
+  ND_BLOCK,   // Block (Conpund Statement)
 
 } NodeKind;
 
@@ -68,6 +69,9 @@ struct Node {
   Node *els;
   Node *init;
   Node *inc;
+
+  // BLOCK (make a vector)
+  Node *next;
 };
 
 void program();

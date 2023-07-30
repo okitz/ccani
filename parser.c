@@ -2,6 +2,7 @@
 
 // program    = stmt*
 // stmt       = expr ";"
+//            | "{" stmt* "}"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
@@ -150,6 +151,13 @@ Node *stmt() {
     node->inc = expr();
     expect_punct(")");
     node->then = stmt();
+  } else if (consume_punct("{")) {
+    node = new_node(ND_BLOCK);
+    Node *vector = node;
+    while (!consume_punct("}")) {
+      vector->next = stmt();
+      vector = vector->next;
+    }
   } else {  // 末尾に ; が必要な文
     if (consume_keyword("return")) {
       node = new_node_unitary(ND_RETURN, expr());
