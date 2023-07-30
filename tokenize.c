@@ -48,18 +48,18 @@ void tokenize() {
 
     if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
         startswith(p, ">=")) {
-      cur = new_token(TK_RESERVED, cur, p, 2);
+      cur = new_token(TK_PUNCT, cur, p, 2);
       p += 2;
       continue;
     }
 
     if (strchr("+-*/()><=;", *p)) {
-      cur = new_token(TK_RESERVED, cur, p++, 1);
+      cur = new_token(TK_PUNCT, cur, p++, 1);
       continue;
     }
 
     if (startswith(p, "return") && !isVaildVarChar(p[6])) {
-      cur = new_token(TK_RETURN, cur, p, 6);
+      cur = new_token(TK_KEYWORD, cur, p, 6);
       p += 6;
       continue;
     }

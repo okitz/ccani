@@ -34,23 +34,6 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
-// 次のトークンが期待する記号opのときには読み進めて真を返す
-bool consume_reserved(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    return false;
-  token = token->next;
-  return true;
-}
-
-// 次のトークンが期待する記号opのときには読み進める
-void expect_reserved(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    error_at(token->str, "expected %s", op);
-  token = token->next;
-}
-
 // 次のトークンが識別子のときには読み進めてオフセットを返す
 int consume_ident() {
   if (token->kind != TK_IDENT) return -1;
@@ -66,6 +49,23 @@ int consume_ident() {
   }
   token = token->next;
   return lvar->offset;
+}
+
+// 次のトークンが期待する記号opのときには読み進めて真を返す
+bool consume_punct(char *op) {
+  if (token->kind != TK_PUNCT || strlen(op) != token->len ||
+      memcmp(token->str, op, token->len))
+    return false;
+  token = token->next;
+  return true;
+}
+
+// 次のトークンが期待する記号opのときには読み進める
+void expect_punct(char *op) {
+  if (token->kind != TK_PUNCT || strlen(op) != token->len ||
+      memcmp(token->str, op, token->len))
+    error_at(token->str, "expected %s", op);
+  token = token->next;
 }
 
 // 次のトークンが数値の場合、読み進めて数値を返す
@@ -114,7 +114,7 @@ Node *stmt() {
   Node *node;
 
   // 本当はconsume_return(), new_node_returnを作りたい
-  if (token->kind == TK_RETURN) {
+  if (token->kind == TK_KEYWORD) {
     token = token->next;
     node = calloc(1, sizeof(Node));
     node->kind = ND_RETURN;
@@ -123,7 +123,7 @@ Node *stmt() {
     node = expr();
   }
 
-  expect_reserved(";");
+  expect_punct(";");
   return node;
 }
 
@@ -131,7 +131,7 @@ Node *expr() { Node *node = assign(); }
 
 Node *assign() {
   Node *node = equality();
-  if (consume_reserved("=")) node = new_node(ND_ASSIGN, node, assign());
+  if (consume_punct("=")) node = new_node(ND_ASSIGN, node, assign());
   return node;
 }
 
@@ -139,9 +139,9 @@ Node *equality() {
   Node *node = relational();
 
   for (;;) {
-    if (consume_reserved("=="))
+    if (consume_punct("=="))
       node = new_node(ND_EQ, node, add());
-    else if (consume_reserved("!="))
+    else if (consume_punct("!="))
       node = new_node(ND_NE, node, add());
     else
       return node;
@@ -152,13 +152,13 @@ Node *relational() {
   Node *node = add();
 
   for (;;) {
-    if (consume_reserved("<"))
+    if (consume_punct("<"))
       node = new_node(ND_LT, node, add());
-    else if (consume_reserved("<="))
+    else if (consume_punct("<="))
       node = new_node(ND_LE, node, add());
-    else if (consume_reserved(">"))
+    else if (consume_punct(">"))
       node = new_node(ND_LT, add(), node);
-    else if (consume_reserved(">="))
+    else if (consume_punct(">="))
       node = new_node(ND_LE, add(), node);
     else
       return node;
@@ -169,9 +169,9 @@ Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume_reserved("+"))
+    if (consume_punct("+"))
       node = new_node(ND_ADD, node, mul());
-    else if (consume_reserved("-"))
+    else if (consume_punct("-"))
       node = new_node(ND_SUB, node, mul());
     else
       return node;
@@ -182,9 +182,9 @@ Node *mul() {
   Node *node = unary();
 
   for (;;) {
-    if (consume_reserved("*"))
+    if (consume_punct("*"))
       node = new_node(ND_MUL, node, unary());
-    else if (consume_reserved("/"))
+    else if (consume_punct("/"))
       node = new_node(ND_DIV, node, unary());
     else
       return node;
@@ -192,18 +192,18 @@ Node *mul() {
 }
 
 Node *unary() {
-  if (consume_reserved("+"))
+  if (consume_punct("+"))
     return primary();
-  else if (consume_reserved("-"))
+  else if (consume_punct("-"))
     return new_node(ND_SUB, new_node_num(0), primary());
   else
     return primary();
 }
 
 Node *primary() {
-  if (consume_reserved("(")) {
+  if (consume_punct("(")) {
     Node *node = expr();
-    expect_reserved(")");
+    expect_punct(")");
     return node;
   }
 
