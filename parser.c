@@ -215,7 +215,18 @@ void program() {
 }
 
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+
+  // 本当はconsume_return(), new_node_returnを作りたい
+  if (token->kind == TK_RETURN) {
+    token = token->next;
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_RETURN;
+    node->lhs = expr();
+  } else {
+    node = expr();
+  }
+
   expect_reserved(";");
   return node;
 }

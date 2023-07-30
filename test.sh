@@ -35,4 +35,7 @@ assert 9 'a = 1;b = a * 3;a = b * 3;'
 assert 5 'a_343_d = 5;a_343_d;'
 assert 3 '___a___ = 2;___a___ + 1;'
 
+assert 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
+assert 22 'returner = 3; return b = 5 * 6 - 8;  a + b / 2;'
+
 echo OK
