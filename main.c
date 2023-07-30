@@ -9,17 +9,30 @@ int main(int argc, char **argv) {
   }
 
   user_input = argv[1];
-  token = tokenize();
-  Node *node = expr();
+  tokenize();
+  program();
 
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
   printf("main:\n");
 
-  gen(node);
+  // Prologue
+  // 変数26個分の領域を確保
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, 208\n");
 
-  printf("  pop rax\n");
+  // 逐次的にコードを生成
+  for (int i = 0; code[i]; i++) {
+    gen(code[i]);
+
+    printf("  pop rax\n");
+  }
+
+  // epilogue
+  // 最後の式の結果(スタックトップ->rax)が返り値になる。
+  printf("  mov rsp, rbp\n");
+  printf("  pop rbp\n");
   printf("  ret\n");
   return 0;
-
 }
