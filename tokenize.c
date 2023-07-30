@@ -39,10 +39,12 @@ bool isVaildVarChar(char c) {
 }
 
 // *pがキーワードなら長さを返す
+#define KWN 5
 int isKeyword(char *p) {
-  const struct Keyword KEYWORDS[2] = {{"return", 6}, {"if", 2}};
+  const struct Keyword KEYWORDS[KWN] = {
+      {"return", 6}, {"if", 2}, {"while", 5}, {"for", 3}, {"else", 4}};
   int len = 0;
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < KWN; i++) {
     char *kw_str = KEYWORDS[i].keyword;
     int kw_len = KEYWORDS[i].len;
     if (startswith(p, kw_str) && !isVaildVarChar(p[kw_len])) {

@@ -1,7 +1,11 @@
 #include "ccani.h"
 
 // program    = stmt*
-// stmt       = expr ";" | "return" expr ";"
+// stmt       = expr ";"
+//            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "while" "(" expr ")" stmt
+//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//            | "return" expr ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -86,10 +90,9 @@ int expect_number() {
 
 bool at_eof() { return token->kind == TK_EOF; }
 
-Node *new_node_ident(int offset) {
+Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_LVAR;
-  node->offset = offset;
+  node->kind = kind;
   return node;
 }
 
@@ -108,13 +111,6 @@ Node *new_node_unitary(NodeKind kind, Node *lhs) {
   return node;
 }
 
-Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_NUM;
-  node->val = val;
-  return node;
-}
-
 Node *code[100];
 
 void program() {
@@ -128,13 +124,24 @@ void program() {
 Node *stmt() {
   Node *node;
 
-  if (consume_keyword("return")) {
-    node = new_node_unitary(ND_RETURN, expr());
-  } else {
-    node = expr();
+  if (consume_keyword("if")) {
+    node = new_node(ND_IF);
+    expect_punct("(");
+    node->cond = expr();
+    expect_punct(")");
+    node->then = stmt();
+    if (consume_keyword("else")) {
+      node->els = stmt();
+    }
+  } else {  // 末尾に ; が必要な文
+    if (consume_keyword("return")) {
+      node = new_node_unitary(ND_RETURN, expr());
+    } else {
+      node = expr();
+    }
+    expect_punct(";");
   }
 
-  expect_punct(";");
   return node;
 }
 
@@ -205,22 +212,31 @@ Node *mul() {
 Node *unary() {
   if (consume_punct("+"))
     return primary();
-  else if (consume_punct("-"))
-    return new_node_binary(ND_SUB, new_node_num(0), primary());
-  else
+  else if (consume_punct("-")) {
+    Node *zero_node = new_node(ND_NUM);
+    zero_node->val = 0;
+    return new_node_binary(ND_SUB, zero_node, primary());
+  } else
     return primary();
 }
 
 Node *primary() {
+  Node *node;
+
   if (consume_punct("(")) {
-    Node *node = expr();
+    node = expr();
     expect_punct(")");
     return node;
   }
 
   int offset = consume_ident();
-  if (offset >= 0) return new_node_ident(offset);
+  if (offset >= 0) {
+    node = new_node(ND_LVAR);
+    node->offset = offset;
+    return node;
+  }
 
-  int val = expect_number();
-  return new_node_num(val);
+  node = new_node(ND_NUM);
+  node->val = expect_number();
+  return node;
 }

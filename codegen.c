@@ -30,6 +30,18 @@ void gen(Node *node) {
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
+    case ND_IF:
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lelse000\n");
+      gen(node->then);
+      printf("  jmp .Lend000\n");
+      printf(".Lelse000:\n");
+      gen(node->els);
+      printf(".Lend000:\n");
+
+      return;
     case ND_LVAR:
       gen_lval(node);
       printf("  pop rax\n");
