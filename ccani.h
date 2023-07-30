@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+//
+// tokenize.c
+//
+
 typedef enum {
   TK_RESERVED, // 記号
   TK_IDENT,    // 識別子
@@ -14,7 +18,6 @@ typedef enum {
 } TokenKind;
 
 typedef struct Token Token;
-
 struct Token{
   TokenKind kind; // 型
   Token *next;    // 次の入力トークン
@@ -22,6 +25,15 @@ struct Token{
   char *str;      // トークン文字列
   int len;        // トークンの長さ
 };
+
+void error_at(char *loc, char *fmt, ...);
+void tokenize();
+
+extern Token *token;
+
+//
+// parser.c
+//
 
 // 抽象構文木のノードの種類
 typedef enum {
@@ -40,7 +52,6 @@ typedef enum {
 } NodeKind;
 
 typedef struct Node Node;
-
 struct Node{
   NodeKind kind;
   Node *lhs;
@@ -48,11 +59,6 @@ struct Node{
   int val; // for ND_NUM
   int offset; // for ND_LVAR
 };
-
-extern char *user_input;
-// extern Token *token;
-
-void tokenize();
 
 void program();
 Node *stmt();
@@ -68,4 +74,15 @@ Node *primary();
 
 extern Node *code[100];
 
+//
+// codegen.c
+//
+
 void gen(Node *node);
+
+
+//
+// main.c
+//
+
+extern char *user_input;
