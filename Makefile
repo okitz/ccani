@@ -1,13 +1,16 @@
 CFLAGS=-std=c11 -g -static
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-ccani: ccani.c
+ccani: $(OBJS)
+		$(CC) -o ccani $(OBJS) $(LDFLAGS)
 
-play: play.c
+$(OBJS): ccani.h
 
 test: ccani
-	./test.sh
+		./test.sh
 
 clean:
-	rm -f ccani *.o *~ tmp*
+		rm -f ccani *.o *~ tmp*
 
 .PHONY: test clean

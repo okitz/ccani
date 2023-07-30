@@ -2,6 +2,7 @@
     "editor.indentSize": "2",
     "files.associations": {
         "stdlib.h": "c",
-        "ctype.h": "c"
+        "ctype.h": "c",
+        "string.h": "c"
     },
 }
