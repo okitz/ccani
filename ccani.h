@@ -10,6 +10,7 @@ typedef enum {
   TK_IDENT,    // 識別子
   TK_NUM,      // 整数トークン
   TK_EOF,      // 終端記号
+  TK_RETURN,   // return
 } TokenKind;
 
 typedef struct Token Token;

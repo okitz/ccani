@@ -35,6 +35,10 @@ bool startswith(char *p, char *q) {
   return memcmp(p, q, strlen(q)) == 0;
 }
 
+bool isVaildVarChar(char c){
+  return ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || (c == '_') || ('a' <= c && c <= 'z');
+}
+
 // 入力文字列pをトークナイズ
 void tokenize() {
   char *p = user_input;
@@ -59,14 +63,25 @@ void tokenize() {
       continue;
     }
 
+    if(startswith(p, "return") && !isVaildVarChar(p[6])){
+      cur = new_token(TK_RETURN, cur, p, 6);
+      p += 6;
+      continue;
+    }
+
     if(isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, -1);
       cur->val = strtol(p, &p, 10);
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
+    if (isVaildVarChar(*p) && !('0' <= *p && *p <= '9')) {
+      int len = 1;
+      while(isVaildVarChar(p[len]))
+        len++;
+      
+      cur = new_token(TK_IDENT, cur, p, len);
+      p += len;
       continue;
     }
 
@@ -83,7 +98,7 @@ void tokenize() {
 //-----------------------------------------------------------------------------------------
 
 // program    = stmt*
-// stmt       = expr ";"
+// stmt       = expr ";" | "return" expr ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -93,6 +108,28 @@ void tokenize() {
 // unary      = ("+" | "-")? primary
 // primary    = num | ident | "(" expr ")"
 // 
+
+typedef struct LVar LVar;
+
+struct LVar {
+  LVar *next; // 次の変数 or NULL
+  char *name; // 変数名;
+  int len;    // 名前の長さ
+  int offset; // rbpからのオフセット
+};
+
+LVar *locals;
+
+// 変数を名前で検索し、見つからなければNULLを返す
+LVar *find_lvar(Token *tok) {
+  LVar *lvar = locals;
+  for (LVar *lvar = locals; lvar; lvar = lvar->next){
+    if (lvar->len == tok->len && !memcmp(tok->str, lvar->name, lvar->len))
+      return lvar;
+  }
+  
+  return NULL;
+}
 
 // 次のトークンが期待する記号opのときには読み進めて真を返す
 bool consume_reserved(char *op) {
@@ -116,10 +153,19 @@ void expect_reserved(char *op) {
 // 次のトークンが識別子のときには読み進めてオフセットを返す
 int consume_ident() {
   if (token->kind != TK_IDENT)
-    return 0;
-  int offset = (token->str[0] - 'a' + 1) * 8;
+    return -1;
+  
+  LVar *lvar = find_lvar(token);
+  if (!lvar) {
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = token->str;
+    lvar->len = token->len;
+    lvar->offset = locals ? (locals->offset + 8) : 0;
+    locals = lvar;
+  }
   token = token->next;
-  return offset;
+  return lvar->offset;
 }
 
 
@@ -257,8 +303,10 @@ Node *primary() {
     expect_reserved(")");
     return node;
   }
+
+  
   int offset = consume_ident();
-  if (offset > 0)
+  if (offset >= 0)
     return new_node_ident(offset);
 
   int val = expect_number();

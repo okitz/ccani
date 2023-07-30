@@ -30,8 +30,9 @@ assert 1 '1 < 2;'
 assert 0 '(1+4*5) >= 20 == 0;'
 assert 3 '(1 == 1) * 3;'
 
-assert 5 'a = 5;a;'
-assert 3 'a = 2;a + (1 == 1);'
 assert 9 'a = 1;b = a * 3;a = b * 3;'
+
+assert 5 'a_343_d = 5;a_343_d;'
+assert 3 '___a___ = 2;___a___ + 1;'
 
 echo OK
