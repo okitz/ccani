@@ -41,17 +41,18 @@ void gen(Node *node) {
       if (node->els) gen(node->els);
       printf(".Lend001:\n");
       return;
-    // case ND_FOR:  // 2
-
-    //   printf(".Lbegin002:\n");
-    //   gen(node->cond);
-    //   printf("  pop rax\n");
-    //   printf("  cmp rax, 0\n");
-    //   printf("  je .Lend002\n");
-    //   gen(node->then);
-    //   printf("  jmp .Lbegin002\n");
-    //   printf(".Lend002:\n");
-    //   return;
+    case ND_FOR:  // 2
+      if (node->init) gen(node->init);
+      printf(".Lbegin002:\n");
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lend002\n");
+      gen(node->then);
+      if (node->inc) gen(node->inc);
+      printf("  jmp .Lbegin002\n");
+      printf(".Lend002:\n");
+      return;
     case ND_LVAR:
       gen_lval(node);
       printf("  pop rax\n");

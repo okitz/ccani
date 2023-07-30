@@ -40,5 +40,7 @@ assert 22 'returner = 3; return b = 5 * 6 - 8;  a + b / 2;'
 
 assert 2 'if(a = 10) return 1 + 1;'
 assert 4 'if(1 > 4) return 1; else return 2*2;'
+assert 64 'i = 1;while(i < 50)i = i*2;return i;'
+assert 10 's=0;for(i = 1;i <= 4;i=i+1)s=s+i;return s;'
 
 echo OK

@@ -50,7 +50,7 @@ typedef enum {
   ND_NUM,     // Integer
   ND_RETURN,  // return Statement
   ND_IF,      // if Statement
-  ND_FOR,     // for Statement
+  ND_FOR,     // for/while Statement
 
 } NodeKind;
 
