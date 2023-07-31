@@ -3,13 +3,14 @@
 // program    = tpdef* func* glvar*
 // tpdef*     = 保留
 // glvar*     = 保留
-// func       = ident "(" (ident (","ident)*)? ")" "{" stmt* "}"
+// func       = "int" ident "(" (ident (","ident)*)? ")" "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //            | "return" expr ";"
+//            | "int" ident ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -93,6 +94,14 @@ bool consume_keyword(char *kw) {
   return true;
 }
 
+// 次のトークンが期待するキーワードのときには読み進める
+void expect_keyword(char *kw) {
+  if (token->kind != TK_KEYWORD || strlen(kw) != token->len ||
+      memcmp(token->str, kw, token->len))
+    error_at(token->str, "expected '%s'", kw);
+  token = token->next;
+}
+
 // 次のトークンが数値の場合、読み進めて数値を返す
 int expect_number() {
   if (token->kind != TK_NUM) error_at(token->str, "expected a number");
@@ -134,15 +143,21 @@ void program() {
   funcs[i] = NULL;
 }
 
+char *cut_ident_name(Token *tok) {
+  char *name = calloc(tok->len + 1, sizeof(char));
+  strncpy(name, tok->str, tok->len);
+  name[tok->len] = '\x0';
+  return name;
+}
+
 Node *func() {
   // 関数名
   Node *node = new_node(ND_FUNDEF);
   for (int i = 0; i < 6; i++) node->args_offset[i] = -1;
 
+  expect_keyword("int");
   Token *tok = expect_ident();
-  node->fname = calloc(tok->len + 1, sizeof(char));
-  strncpy(node->fname, tok->str, tok->len);
-  node->fname[tok->len] = '\x0';
+  node->fname = cut_ident_name(tok);
 
   // 引数
   expect_punct("(");
@@ -216,6 +231,21 @@ Node *stmt() {
   } else {  // 末尾に ; が必要な文
     if (consume_keyword("return")) {
       node = new_node_unitary(ND_RETURN, expr());
+    } else if (consume_keyword("int")) {
+      Token *tok = expect_ident();
+      node = new_node(ND_VARDEF);
+      LVar *lvar = find_lvar(tok);
+      if (lvar) {
+        error_at(token->str, "%s is already defined", lvar->name);
+      } else {
+        lvar = calloc(1, sizeof(LVar));
+        lvar->next = locals;
+        lvar->name = cut_ident_name(tok);
+        lvar->len = tok->len;
+        lvar->offset = locals ? (locals->offset + 8) : 8;
+        locals = lvar;
+      }
+      node->offset = lvar->offset;
     } else {
       node = expr();
     }
@@ -322,9 +352,7 @@ Node *primary() {
   if (tok) {
     if (consume_punct("(")) {
       node = new_node(ND_FUNCALL);
-      node->fname = calloc(tok->len + 1, sizeof(char));
-      strncpy(node->fname, tok->str, tok->len);
-      node->fname[tok->len] = '\x0';
+      node->fname = cut_ident_name(tok);
 
       Node *vector = node;
       if (!consume_punct(")")) {
@@ -345,7 +373,7 @@ Node *primary() {
         lvar->next = locals;
         lvar->name = tok->str;
         lvar->len = tok->len;
-        lvar->offset = locals ? (locals->offset + 8) : 0;
+        lvar->offset = locals ? (locals->offset + 8) : 8;
         locals = lvar;
       }
       node->offset = lvar->offset;

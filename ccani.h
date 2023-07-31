@@ -49,6 +49,7 @@ typedef enum {
   ND_ASSIGN,   // =
   ND_ADDR,     // unary & (memory address)
   ND_DEREF,    // unary * (dereference)
+  ND_VARDEF,   // variable definition
   ND_LVAR,     // Local Variable
   ND_NUM,      // Integer
   ND_RETURN,   // return Statement
@@ -66,7 +67,7 @@ struct Node {
   Node *lhs;
   Node *rhs;
   int val;     // NUM
-  int offset;  // LVAR
+  int offset;  // VARDEF, LVAR
 
   // IF or FOR
   Node *cond;
