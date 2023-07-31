@@ -53,6 +53,17 @@ Token *consume_ident() {
   }
 }
 
+// 次のトークンが識別子のときには読み進めてトークンを返す
+Token *expect_ident() {
+  if (token->kind != TK_IDENT)
+    error_at(token->str, "expected identifier");
+  else {
+    Token *old_token = token;
+    token = token->next;
+    return old_token;
+  }
+}
+
 // 次のトークンが期待する記号pcのときには読み進めて真を返す
 bool consume_punct(char *pc) {
   if (token->kind != TK_PUNCT || strlen(pc) != token->len ||
@@ -110,11 +121,54 @@ Node *new_node_unitary(NodeKind kind, Node *lhs) {
   return node;
 }
 
+Node *funcs[100];
 Node *code[100];
 
 void program() {
   int i = 0;
   while (!at_eof()) {
+    funcs[i++] = func();
+  }
+  funcs[i] = NULL;
+}
+
+Node *func() {
+  // 関数名
+  Node *node = new_node(ND_FUNDEF);
+  for (int i = 0; i < 6; i++) node->args_offset[i] = -1;
+
+  Token *tok = expect_ident();
+  node->fname = calloc(tok->len + 1, sizeof(char));
+  strncpy(node->fname, tok->str, tok->len);
+  node->fname[tok->len] = '\x0';
+
+  // 引数
+  expect_punct("(");
+  if (!consume_punct(")")) {
+    for (int i = 0; i < 6; i++) {
+      Token *arg = expect_ident();
+      LVar *lvar = find_lvar(arg);
+      if (!lvar) {
+        lvar = calloc(1, sizeof(LVar));
+        lvar->next = locals;
+        lvar->name = arg->str;
+        lvar->len = arg->len;
+        lvar->offset = locals ? (locals->offset + 8) : 0;
+        locals = lvar;
+      }
+      node->args_offset[i] = lvar->offset;
+
+      if (consume_punct(")"))
+        break;
+      else
+        expect_punct(",");
+    }
+  }
+
+  // 本体 (とりあえずmain関数1つだけ)
+  expect_punct("{");
+  int i = 0;
+  while (!consume_punct("}")) {
     code[i++] = stmt();
   }
   code[i] = NULL;
@@ -168,7 +222,10 @@ Node *stmt() {
   return node;
 }
 
-Node *expr() { Node *node = assign(); }
+Node *expr() {
+  Node *node = assign();
+  return node;
+}
 
 Node *assign() {
   Node *node = equality();
@@ -259,14 +316,15 @@ Node *primary() {
       node->fname = calloc(tok->len + 1, sizeof(char));
       strncpy(node->fname, tok->str, tok->len);
       node->fname[tok->len] = '\x0';
+
       Node *vector = node;
       if (!consume_punct(")")) {
         for (;;) {
-          vector->next = expr();
-          vector = vector->next;
-          if (consume_punct(")")) {
+          vector->next_arg = expr();
+          vector = vector->next_arg;
+          if (consume_punct(")"))
             break;
-          } else
+          else
             expect_punct(",");
         }
       }

@@ -68,12 +68,12 @@ void gen(Node *node) {
       printf("  push rax\n");
       return;
     case ND_FUNCALL:
-      Node *arg = node->next;
+      Node *arg = node->next_arg;
       int arg_cnt = 0;
       while (arg) {
         gen(arg);
         arg_cnt++;
-        arg = arg->next;
+        arg = arg->next_arg;
       }
       for (int i = arg_cnt - 1; i >= 0; i--) {
         printf("  pop %s\n", argreg[i]);

@@ -53,6 +53,7 @@ typedef enum {
   ND_FOR,      // for/while Statement
   ND_BLOCK,    // Block (Conpund Statement)
   ND_FUNCALL,  // Function Call
+  ND_FUNDEF,   // Function Definition
 
 } NodeKind;
 
@@ -71,16 +72,21 @@ struct Node {
   Node *init;
   Node *inc;
 
-  // make a vector
-  //    BLOCK -> innner statements
-  //    FUNCALL -> arguments
+  // BLOCK (make a vector)
   Node *next;
 
-  // FUNCALL
+  // FUNCALL (make a vector)
+  Node *next_arg;
+
+  // FUNCALL, FUNDEF
   char *fname;
+
+  // FUNDEF
+  int args_offset[6];
 };
 
 void program();
+Node *func();
 Node *stmt();
 Node *expr();
 Node *assign();
