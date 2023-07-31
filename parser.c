@@ -1,6 +1,9 @@
 #include "ccani.h"
 
-// program    = stmt*
+// program    = tpdef* func* glvar*
+// tpdef*     = 保留
+// glvar*     = 保留
+// func       = ident "(" (ident (","ident)*)? ")" "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -14,7 +17,7 @@
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
-// primary    = num | ident ("(" (expr)* ")")? | "(" expr ")"
+// primary    = num | ident ("(" (expr (","expr)* )? ")")? | "(" expr ")"
 //
 
 typedef struct LVar LVar;

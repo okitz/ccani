@@ -79,7 +79,14 @@ void gen(Node *node) {
         printf("  pop %s\n", argreg[i]);
       }
 
-      // printf("  and rsp, ");
+      // スタックのアラインメント
+      // 参考:
+      // https://github.com/hsjoihs/c-compiler/blob/c4dfc46ac9be116e6cbb8dd36f04ba55dd35a290/print_x86_64_unofficial.c#L185-L206
+      printf("  sub rsp, 8\n");
+      printf("  mov rax, rsp\n");
+      printf("  and rax, 15\n");
+      printf("  sub rsp, rax\n");
+
       printf("  call %s\n", node->fname);
 
       // 評価した値がつねにスタックトップに残るようにする
