@@ -39,4 +39,7 @@ assert 11 'main(){foo(34, 23);}'
 assert 5 'main(){return sub()+2;} sub(){return 3;}'
 assert 5 'main(){return sub(3)+2;} sub(x){return x;}'
 
+assert 18 'main(){ return gcd(90, 144); } gcd(a, b){ if(b == 0)return a; else return gcd(b, a%b); }'
+
+assert 3 'main(){ x = 3; y = 5; z = &y + 8;return *z;}' 
 echo OK

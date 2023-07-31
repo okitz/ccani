@@ -47,6 +47,8 @@ typedef enum {
   ND_LT,       // <
   ND_LE,       // <=
   ND_ASSIGN,   // =
+  ND_ADDR,     // unary & (memory address)
+  ND_DEREF,    // unary * (dereference)
   ND_LVAR,     // Local Variable
   ND_NUM,      // Integer
   ND_RETURN,   // return Statement

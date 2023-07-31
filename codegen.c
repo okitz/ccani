@@ -57,6 +57,15 @@ void gen(Node *node) {
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
+    case ND_ADDR:
+      gen_lval(node->lhs);
+      return;
+    case ND_DEREF:
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  mov rax, [rax]\n");
+      printf("  push rax\n");
+      return;
     case ND_IF:  // 1
       gen(node->cond);
       printf("  pop rax\n");
@@ -127,7 +136,7 @@ void gen(Node *node) {
       return;
   }
 
-  // 以下は右左辺の区別がない処理
+  // 以下は右左辺の区別がない二項演算
 
   gen(node->lhs);
   gen(node->rhs);

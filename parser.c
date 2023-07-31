@@ -16,7 +16,10 @@
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
-// unary      = ("+" | "-")? primary
+// unary = "+"? primary
+//       | "-"? primary
+//       | "*" unary
+//       | "&" unary
 // primary    = num | ident ("(" (expr (","expr)* )? ")")? | "(" expr ")"
 //
 
@@ -298,6 +301,10 @@ Node *unary() {
     Node *zero_node = new_node(ND_NUM);
     zero_node->val = 0;
     return new_node_binary(ND_SUB, zero_node, primary());
+  } else if (consume_punct("&")) {
+    return new_node_unitary(ND_ADDR, unary());
+  } else if (consume_punct("*")) {
+    return new_node_unitary(ND_DEREF, unary());
   } else
     return primary();
 }
