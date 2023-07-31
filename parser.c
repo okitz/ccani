@@ -284,6 +284,8 @@ Node *mul() {
       node = new_node_binary(ND_MUL, node, unary());
     else if (consume_punct("/"))
       node = new_node_binary(ND_DIV, node, unary());
+    else if (consume_punct("%"))
+      node = new_node_binary(ND_RMD, node, unary());
     else
       return node;
   }

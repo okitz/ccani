@@ -20,6 +20,7 @@ assert 0 'main(){0;}'
 assert 22 "main(){ 10 + 15 - 3 + 0 ; }"
 assert 15 'main(){5 * (9-6);}'
 assert 4 'main(){(3+5)/2;}'
+assert 5 'main(){22%4+3;}'
 assert 30 'main(){+20-(-10);}'
 assert 0 'main(){(1+4*5) >= 20 == 0;}'
 
