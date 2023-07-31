@@ -15,7 +15,10 @@ int main(int argc, char **argv) {
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
 
-  gen(funcs[0]);
+  // 逐次的に関数を生成
+  for (int i = 0; funcs[i]; i++) {
+    gen(funcs[i]);
+  }
 
   return 0;
 }

@@ -122,7 +122,6 @@ Node *new_node_unitary(NodeKind kind, Node *lhs) {
 }
 
 Node *funcs[100];
-Node *code[100];
 
 void program() {
   int i = 0;
@@ -153,7 +152,7 @@ Node *func() {
         lvar->next = locals;
         lvar->name = arg->str;
         lvar->len = arg->len;
-        lvar->offset = locals ? (locals->offset + 8) : 0;
+        lvar->offset = locals ? (locals->offset + 8) : 8;
         locals = lvar;
       }
       node->args_offset[i] = lvar->offset;
@@ -165,13 +164,12 @@ Node *func() {
     }
   }
 
-  // 本体 (とりあえずmain関数1つだけ)
   expect_punct("{");
   int i = 0;
   while (!consume_punct("}")) {
-    code[i++] = stmt();
+    node->code[i++] = stmt();
   }
-  code[i] = NULL;
+  node->code[i] = NULL;
 
   return node;
 }

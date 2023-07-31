@@ -35,4 +35,7 @@ assert 34 'main(){s=0;m=1;for(i = 1;i <= 4;i=i+1){s=s+i;m=m*i;} return s+m;}'
 
 assert 11 'main(){foo(34, 23);}'
 
+assert 5 'main(){return sub()+2;} sub(){return 3;}'
+assert 5 'main(){return sub(3)+2;} sub(x){return x;}'
+
 echo OK

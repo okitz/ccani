@@ -33,10 +33,13 @@ void gen(Node *node) {
       printf("  sub rsp, 208\n");
 
       // ABIのレジスタの値をoffsetを参照してスタックに設定
+      for (int i = 0; node->args_offset[i] >= 0; i++) {
+        printf("  mov [rbp-%d], %s\n", node->args_offset[i], argreg[i]);
+      }
 
       // 逐次的にコードを生成
-      for (int i = 0; code[i]; i++) {
-        gen(code[i]);
+      for (int i = 0; node->code[i]; i++) {
+        gen(node->code[i]);
         printf("  pop rax\n");
       }
       // epilogue

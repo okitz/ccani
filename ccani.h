@@ -83,6 +83,7 @@ struct Node {
 
   // FUNDEF
   int args_offset[6];
+  Node *code[100];
 };
 
 void program();
@@ -98,7 +99,6 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-extern Node *code[100];
 extern Node *funcs[100];
 //
 // codegen.c
