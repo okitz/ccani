@@ -172,6 +172,8 @@ Node *func() {
     code[i++] = stmt();
   }
   code[i] = NULL;
+
+  return node;
 }
 
 Node *stmt() {

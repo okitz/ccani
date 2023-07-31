@@ -23,6 +23,28 @@ void gen_lval(Node *node) {
 
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_FUNDEF:
+      printf("%s:\n", node->fname);
+
+      // Prologue
+      // 変数26個分の領域を確保
+      printf("  push rbp\n");
+      printf("  mov rbp, rsp\n");
+      printf("  sub rsp, 208\n");
+
+      // ABIのレジスタの値をoffsetを参照してスタックに設定
+
+      // 逐次的にコードを生成
+      for (int i = 0; code[i]; i++) {
+        gen(code[i]);
+        printf("  pop rax\n");
+      }
+      // epilogue
+      // 最後の式の結果(スタックトップ->rax)が返り値になる。
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
+      printf("  ret\n");
+      return;
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n");

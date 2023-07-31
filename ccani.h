@@ -99,7 +99,7 @@ Node *unary();
 Node *primary();
 
 extern Node *code[100];
-
+extern Node *funcs[100];
 //
 // codegen.c
 //
