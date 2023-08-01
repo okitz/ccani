@@ -12,13 +12,20 @@ void error(char *fmt, ...) {
   exit(1);
 }
 
+void println(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  printf(fmt, ap);
+  printf("\n");
+}
+
 void gen_lval(Node *node) {
   if (node->kind != ND_LVAR)
     error("lvalue required as left operand of assignment");
 
-  printf("  mov rax, rbp\n");
+  println("  mov rax, rbp");
   printf("  sub rax, %d\n", node->offset);
-  printf("  push rax\n");
+  println("  push rax");
 }
 
 void gen(Node *node) {
@@ -28,9 +35,9 @@ void gen(Node *node) {
 
       // Prologue
       // 変数26個分の領域を確保
-      printf("  push rbp\n");
-      printf("  mov rbp, rsp\n");
-      printf("  sub rsp, 208\n");
+      println("  push rbp");
+      println("  mov rbp, rsp");
+      println("  sub rsp, 208");
 
       // ABIのレジスタの値をoffsetを参照してスタックに設定
       for (int i = 0; node->args_offset[i] >= 0; i++) {
@@ -44,26 +51,26 @@ void gen(Node *node) {
 
       // epilogue
       // デフォルト値(intなら0)を返り値に設定
-      printf("  mov rax, 0\n");
-      printf("  mov rsp, rbp\n");
-      printf("  pop rbp\n");
-      printf("  ret\n");
+      println("  mov rax, 0");
+      println("  mov rsp, rbp");
+      println("  pop rbp");
+      println("  ret");
       return;
     case ND_VARDEF:
       // とりあえず何もしなくていい
       return;
     case ND_RETURN:
       gen(node->lhs);
-      printf("  pop rax\n");
-      printf("  mov rsp, rbp\n");
-      printf("  pop rbp\n");
-      printf("  ret\n");
+      println("  pop rax");
+      println("  mov rsp, rbp");
+      println("  pop rbp");
+      println("  ret");
       return;
     case ND_EXPR_STMT:
       gen(node->lhs);
 
       // exprの返り値をスタックから削除しておく
-      printf("  pop rax\n");
+      println("  pop rax");
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
@@ -72,32 +79,32 @@ void gen(Node *node) {
       return;
     case ND_DEREF:
       gen(node->lhs);
-      printf("  pop rax\n");
-      printf("  mov rax, [rax]\n");
-      printf("  push rax\n");
+      println("  pop rax");
+      println("  mov rax, [rax]");
+      println("  push rax");
       return;
     case ND_IF:  // 1
       gen(node->cond);
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je .Lelse001\n");
+      println("  pop rax");
+      println("  cmp rax, 0");
+      println("  je .Lelse001");
       gen(node->then);
-      printf("  jmp .Lend001\n");
-      printf(".Lelse001:\n");
+      println("  jmp .Lend001");
+      println(".Lelse001:");
       if (node->els) gen(node->els);
-      printf(".Lend001:\n");
+      println(".Lend001:");
       return;
     case ND_FOR:  // 2
       if (node->init) gen(node->init);
-      printf(".Lbegin002:\n");
+      println(".Lbegin002:");
       gen(node->cond);
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je .Lend002\n");
+      println("  pop rax");
+      println("  cmp rax, 0");
+      println("  je .Lend002");
       gen(node->then);
       if (node->inc) gen(node->inc);
-      printf("  jmp .Lbegin002\n");
-      printf(".Lend002:\n");
+      println("  jmp .Lbegin002");
+      println(".Lend002:");
       return;
     case ND_BLOCK:
       while (node->next) {
@@ -107,9 +114,9 @@ void gen(Node *node) {
       return;
     case ND_LVAR:
       gen_lval(node);
-      printf("  pop rax\n");
-      printf("  mov rax, [rax]\n");
-      printf("  push rax\n");
+      println("  pop rax");
+      println("  mov rax, [rax]");
+      println("  push rax");
       return;
     case ND_FUNCALL:
       Node *arg = node->next_arg;
@@ -126,23 +133,23 @@ void gen(Node *node) {
       // スタックのアラインメント
       // 参考:
       // https://github.com/hsjoihs/c-compiler/blob/c4dfc46ac9be116e6cbb8dd36f04ba55dd35a290/print_x86_64_unofficial.c#L185-L206
-      printf("  sub rsp, 8\n");
-      printf("  mov rax, rsp\n");
-      printf("  and rax, 15\n");
-      printf("  sub rsp, rax\n");
+      println("  sub rsp, 8");
+      println("  mov rax, rsp");
+      println("  and rax, 15");
+      println("  sub rsp, rax");
 
       printf("  call %s\n", node->fname);
 
       // 評価した値がつねにスタックトップに残るようにする
-      printf("  push rax\n");
+      println("  push rax");
       return;
     case ND_ASSIGN:
       gen_lval(node->lhs);
       gen(node->rhs);
-      printf("  pop rdi\n");
-      printf("  pop rax\n");
-      printf("  mov [rax], rdi\n");
-      printf("  push rdi\n");
+      println("  pop rdi");
+      println("  pop rax");
+      println("  mov [rax], rdi");
+      println("  push rdi");
       return;
   }
 
@@ -151,49 +158,49 @@ void gen(Node *node) {
   gen(node->lhs);
   gen(node->rhs);
 
-  printf("  pop rdi\n");
-  printf("  pop rax\n");
+  println("  pop rdi");
+  println("  pop rax");
 
   switch (node->kind) {
     case ND_ADD:
-      printf("  add rax, rdi\n");
+      println("  add rax, rdi");
       break;
     case ND_SUB:
-      printf("  sub rax, rdi\n");
+      println("  sub rax, rdi");
       break;
     case ND_MUL:
-      printf("  imul rax, rdi\n");
+      println("  imul rax, rdi");
       break;
     case ND_DIV:
-      printf("  cqo\n");
-      printf("  idiv rdi\n");
+      println("  cqo");
+      println("  idiv rdi");
       break;
     case ND_RMD:
-      printf("  cqo\n");
-      printf("  idiv rdi\n");
-      printf("  mov rax, rdx\n");
+      println("  cqo");
+      println("  idiv rdi");
+      println("  mov rax, rdx");
       break;
     case ND_EQ:
-      printf("  cmp rax, rdi\n");
-      printf("  sete al\n");
-      printf("  movzb rax, al\n");
+      println("  cmp rax, rdi");
+      println("  sete al");
+      println("  movzb rax, al");
       break;
     case ND_NE:
-      printf("  cmp rax, rdi\n");
-      printf("  setne al\n");
-      printf("  movzb rax, al\n");
+      println("  cmp rax, rdi");
+      println("  setne al");
+      println("  movzb rax, al");
       break;
     case ND_LT:
-      printf("  cmp rax, rdi\n");
-      printf("  setl al\n");
-      printf("  movzb rax, al\n");
+      println("  cmp rax, rdi");
+      println("  setl al");
+      println("  movzb rax, al");
       break;
     case ND_LE:
-      printf("  cmp rax, rdi\n");
-      printf("  setle al\n");
-      printf("  movzb rax, al\n");
+      println("  cmp rax, rdi");
+      println("  setle al");
+      println("  movzb rax, al");
       break;
   }
 
-  printf("  push rax\n");
+  println("  push rax");
 }
