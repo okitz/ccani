@@ -37,27 +37,28 @@ extern Token *token;
 
 // 抽象構文木のノードの種類
 typedef enum {
-  ND_ADD,      // +
-  ND_SUB,      // -
-  ND_MUL,      // *
-  ND_DIV,      // /
-  ND_RMD,      // %
-  ND_EQ,       // ==
-  ND_NE,       // !=
-  ND_LT,       // <
-  ND_LE,       // <=
-  ND_ASSIGN,   // =
-  ND_ADDR,     // unary & (memory address)
-  ND_DEREF,    // unary * (dereference)
-  ND_VARDEF,   // variable definition
-  ND_LVAR,     // Local Variable
-  ND_NUM,      // Integer
-  ND_RETURN,   // return Statement
-  ND_IF,       // if Statement
-  ND_FOR,      // for/while Statement
-  ND_BLOCK,    // Block (Conpund Statement)
-  ND_FUNCALL,  // Function Call
-  ND_FUNDEF,   // Function Definition
+  ND_ADD,        // +
+  ND_SUB,        // -
+  ND_MUL,        // *
+  ND_DIV,        // /
+  ND_RMD,        // %
+  ND_EQ,         // ==
+  ND_NE,         // !=
+  ND_LT,         // <
+  ND_LE,         // <=
+  ND_ASSIGN,     // =
+  ND_ADDR,       // unary & (memory address)
+  ND_DEREF,      // unary * (dereference)
+  ND_VARDEF,     // variable definition
+  ND_LVAR,       // Local Variable
+  ND_NUM,        // Integer
+  ND_RETURN,     // return Statement
+  ND_IF,         // if Statement
+  ND_FOR,        // for/while Statement
+  ND_BLOCK,      // Block (Conpund Statement)
+  ND_EXPR_STMT,  // <stmt>; Statement
+  ND_FUNCALL,    // Function Call
+  ND_FUNDEF,     // Function Definition
 
 } NodeKind;
 

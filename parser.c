@@ -246,7 +246,7 @@ Node *stmt() {
       locals = lvar;
       node->offset = lvar->offset;
     } else {
-      node = expr();
+      node = new_node_unitary(ND_EXPR_STMT, expr());
     }
     expect_punct(";");
   }

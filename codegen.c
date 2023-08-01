@@ -40,10 +40,11 @@ void gen(Node *node) {
       // 逐次的にコードを生成
       for (int i = 0; node->code[i]; i++) {
         gen(node->code[i]);
-        printf("  pop rax\n");
       }
+
       // epilogue
-      // 最後の式の結果(スタックトップ->rax)が返り値になる。
+      // デフォルト値(intなら0)を返り値に設定
+      printf("  mov rax, 0\n");
       printf("  mov rsp, rbp\n");
       printf("  pop rbp\n");
       printf("  ret\n");
@@ -58,6 +59,11 @@ void gen(Node *node) {
       printf("  pop rbp\n");
       printf("  ret\n");
       return;
+    case ND_EXPR_STMT:
+      gen(node->lhs);
+
+      // exprの返り値をスタックから削除しておく
+      printf("  pop rax\n");
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
