@@ -237,14 +237,13 @@ Node *stmt() {
       LVar *lvar = find_lvar(tok);
       if (lvar) {
         error_at(tok->str, "%s is already defined", lvar->name);
-      } else {
-        lvar = calloc(1, sizeof(LVar));
-        lvar->next = locals;
-        lvar->name = cut_ident_name(tok);
-        lvar->len = tok->len;
-        lvar->offset = locals ? (locals->offset + 8) : 8;
-        locals = lvar;
       }
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = cut_ident_name(tok);
+      lvar->len = tok->len;
+      lvar->offset = locals ? (locals->offset + 8) : 8;
+      locals = lvar;
       node->offset = lvar->offset;
     } else {
       node = expr();
@@ -369,7 +368,7 @@ Node *primary() {
       node = new_node(ND_LVAR);
       LVar *lvar = find_lvar(tok);
       if (!lvar) {
-        error_at(tok->str, "%s undeclared", lvar->name);
+        error_at(tok->str, "%s undeclared", cut_ident_name(tok));
       }
       node->offset = lvar->offset;
     }
