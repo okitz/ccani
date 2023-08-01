@@ -165,14 +165,15 @@ Node *func() {
     for (int i = 0; i < 6; i++) {
       Token *arg = expect_ident();
       LVar *lvar = find_lvar(arg);
-      if (!lvar) {
-        lvar = calloc(1, sizeof(LVar));
-        lvar->next = locals;
-        lvar->name = arg->str;
-        lvar->len = arg->len;
-        lvar->offset = locals ? (locals->offset + 8) : 8;
-        locals = lvar;
+      if (lvar) {
+        error_at(tok->str, "%s is already defined", lvar->name);
       }
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = arg->str;
+      lvar->len = arg->len;
+      lvar->offset = locals ? (locals->offset + 8) : 8;
+      locals = lvar;
       node->args_offset[i] = lvar->offset;
 
       if (consume_punct(")"))
