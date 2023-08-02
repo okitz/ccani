@@ -44,10 +44,7 @@ void gen(Node *node) {
         printf("  mov [rbp-%d], %s\n", node->args_offset[i], argreg[i]);
       }
 
-      // 逐次的にコードを生成
-      for (int i = 0; node->code[i]; i++) {
-        gen(node->code[i]);
-      }
+      gen(node->funcbody);
 
       // epilogue
       // デフォルト値(intなら0)を返り値に設定
@@ -107,9 +104,9 @@ void gen(Node *node) {
       println(".Lend002:");
       return;
     case ND_BLOCK:
-      while (node->next) {
-        node = node->next;
-        gen(node);
+      int i = 0;
+      while (node->code[i]) {
+        gen(node->code[i++]);
       }
       return;
     case ND_LVAR:

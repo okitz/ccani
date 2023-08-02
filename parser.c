@@ -3,14 +3,15 @@
 // program    = tpdef* func* glvar*
 // tpdef*     = 保留
 // glvar*     = 保留
-// func       = "int" ident "(" (ident (","ident)*)? ")" "{" stmt* "}"
+// func       = "int" ident "(" (ident (","ident)*)? ")" "{" block
+// block      = stmt* "}"
 // stmt       = expr ";"
-//            | "{" stmt* "}"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //            | "return" expr ";"
 //            | "int" ident ";"
+//            | "{" block
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -19,18 +20,25 @@
 // mul        = unary ("*" unary | "/" unary)*
 // unary = "+"? primary
 //       | "-"? primary
-//       | "*" unary
 //       | "&" unary
+//       | "*" expr
 // primary    = num | ident ("(" (expr (","expr)* )? ")")? | "(" expr ")"
 //
 
+typedef struct Type Type;
 typedef struct LVar LVar;
+
+struct Type {
+  enum { INT, PTR } ty;
+  struct Type *ptr_to;
+};
 
 struct LVar {
   LVar *next;  // 次の変数 or NULL
   char *name;  // 変数名;
   int len;     // 名前の長さ
   int offset;  // rbpからのオフセット
+  Type type;
 };
 
 LVar *locals;
@@ -168,9 +176,11 @@ Node *func() {
       if (lvar) {
         error_at(tok->str, "%s is already defined", lvar->name);
       }
+
+      // これおかしい (local variableではないので)
       lvar = calloc(1, sizeof(LVar));
       lvar->next = locals;
-      lvar->name = arg->str;
+      lvar->name = cut_ident_name(arg);
       lvar->len = arg->len;
       lvar->offset = locals ? (locals->offset + 8) : 8;
       locals = lvar;
@@ -184,12 +194,18 @@ Node *func() {
   }
 
   expect_punct("{");
+  node->funcbody = block();
+
+  return node;
+}
+
+Node *block() {
+  Node *node = new_node(ND_BLOCK);
   int i = 0;
   while (!consume_punct("}")) {
     node->code[i++] = stmt();
   }
   node->code[i] = NULL;
-
   return node;
 }
 
@@ -223,12 +239,7 @@ Node *stmt() {
     expect_punct(")");
     node->then = stmt();
   } else if (consume_punct("{")) {
-    node = new_node(ND_BLOCK);
-    Node *vector = node;
-    while (!consume_punct("}")) {
-      vector->next = stmt();
-      vector = vector->next;
-    }
+    node = block();
   } else {  // 末尾に ; が必要な文
     if (consume_keyword("return")) {
       node = new_node_unitary(ND_RETURN, expr());
@@ -334,7 +345,7 @@ Node *unary() {
   } else if (consume_punct("&")) {
     return new_node_unitary(ND_ADDR, unary());
   } else if (consume_punct("*")) {
-    return new_node_unitary(ND_DEREF, unary());
+    return new_node_unitary(ND_DEREF, expr());
   } else
     return primary();
 }
@@ -378,5 +389,6 @@ Node *primary() {
 
   node = new_node(ND_NUM);
   node->val = expect_number();
+
   return node;
 }

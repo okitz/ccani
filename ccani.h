@@ -77,8 +77,8 @@ struct Node {
   Node *init;
   Node *inc;
 
-  // BLOCK (make a vector)
-  Node *next;
+  // BLOCK
+  Node *code[100];
 
   // FUNCALL (make a vector)
   Node *next_arg;
@@ -88,11 +88,12 @@ struct Node {
 
   // FUNDEF
   int args_offset[6];
-  Node *code[100];
+  Node *funcbody;
 };
 
 void program();
 Node *func();
+Node *block();
 Node *stmt();
 Node *expr();
 Node *assign();

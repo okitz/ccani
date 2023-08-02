@@ -16,8 +16,8 @@ assert() {
   fi
 }
 
-assert 0 'int main(){0;}'
-assert 0 "int main(){ 10 + 15 - 3 + 0 ; }"
+assert 0 'int main(){3;}'
+assert 22 "int main(){return 10 + 15 - 3 + 0 ; }"
 assert 15 'int main(){return 5 * (9-6);}'
 assert 4 'int main(){return (3+5)/2;}'
 assert 5 'int main(){return 22%4+3;}'
