@@ -62,6 +62,21 @@ typedef enum {
 
 } NodeKind;
 
+typedef struct Type Type;
+struct Type {
+  enum { INT, PTR } ty;
+  struct Type *ptr_to;
+};
+
+typedef struct LVar LVar;
+struct LVar {
+  LVar *next;  // 次の変数 or NULL
+  char *name;  // 変数名;
+  int len;     // 名前の長さ
+  int offset;  // rbpからのオフセット
+  Type type;
+};
+
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
@@ -79,6 +94,7 @@ struct Node {
 
   // BLOCK
   Node *code[100];
+  LVar *locals;
 
   // FUNCALL (make a vector)
   Node *next_arg;
@@ -106,6 +122,7 @@ Node *unary();
 Node *primary();
 
 extern Node *funcs[100];
+
 //
 // codegen.c
 //

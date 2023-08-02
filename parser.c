@@ -25,27 +25,10 @@
 // primary    = num | ident ("(" (expr (","expr)* )? ")")? | "(" expr ")"
 //
 
-typedef struct Type Type;
-typedef struct LVar LVar;
-
-struct Type {
-  enum { INT, PTR } ty;
-  struct Type *ptr_to;
-};
-
-struct LVar {
-  LVar *next;  // 次の変数 or NULL
-  char *name;  // 変数名;
-  int len;     // 名前の長さ
-  int offset;  // rbpからのオフセット
-  Type type;
-};
-
 LVar *locals;
 
 // 変数を名前で検索し、見つからなければNULLを返す
-LVar *find_lvar(Token *tok) {
-  LVar *lvar = locals;
+LVar *find_lvar(LVar *locals, Token *tok) {
   for (LVar *lvar = locals; lvar; lvar = lvar->next) {
     if (lvar->len == tok->len && !memcmp(tok->str, lvar->name, lvar->len))
       return lvar;
@@ -169,22 +152,20 @@ Node *func() {
 
   // 引数
   expect_punct("(");
+  LVar *arg_head = NULL, *arg_tail = NULL;
   if (!consume_punct(")")) {
     for (int i = 0; i < 6; i++) {
-      Token *arg = expect_ident();
-      LVar *lvar = find_lvar(arg);
-      if (lvar) {
-        error_at(tok->str, "%s is already defined", lvar->name);
-      }
+      Token *arg_tok = expect_ident();
+      LVar *arg;
+      arg = calloc(1, sizeof(LVar));
+      arg->name = cut_ident_name(arg_tok);
+      arg->len = arg_tok->len;
+      arg->offset = arg_head ? (arg_head->offset + 8) : 8;
+      arg->next = arg_head;
+      node->args_offset[i] = arg->offset;
 
-      // これおかしい (local variableではないので)
-      lvar = calloc(1, sizeof(LVar));
-      lvar->next = locals;
-      lvar->name = cut_ident_name(arg);
-      lvar->len = arg->len;
-      lvar->offset = locals ? (locals->offset + 8) : 8;
-      locals = lvar;
-      node->args_offset[i] = lvar->offset;
+      if (!arg_tail) arg_tail = arg;
+      arg_head = arg;
 
       if (consume_punct(")"))
         break;
@@ -193,6 +174,10 @@ Node *func() {
     }
   }
 
+  // arg_tailをlocalsかわりに使えるはず
+  if (arg_head) {
+    locals = arg_head;
+  }
   expect_punct("{");
   node->funcbody = block();
 
@@ -203,19 +188,19 @@ Node *block() {
   Node *node = new_node(ND_BLOCK);
   int i = 0;
   while (!consume_punct("}")) {
-    node->code[i++] = stmt();
+    node->code[i++] = stmt(node->locals);
   }
   node->code[i] = NULL;
   return node;
 }
 
-Node *stmt() {
+Node *stmt(LVar *locals) {
   Node *node;
 
   if (consume_keyword("if")) {
     node = new_node(ND_IF);
     expect_punct("(");
-    node->cond = expr();
+    node->cond = expr(locals);
     expect_punct(")");
     node->then = stmt();
     if (consume_keyword("else")) {
@@ -224,29 +209,29 @@ Node *stmt() {
   } else if (consume_keyword("while")) {
     node = new_node(ND_FOR);
     expect_punct("(");
-    node->cond = expr();
+    node->cond = expr(locals);
     expect_punct(")");
     node->then = stmt();
 
   } else if (consume_keyword("for")) {
     node = new_node(ND_FOR);
     expect_punct("(");
-    node->init = expr();
+    node->init = expr(locals);
     expect_punct(";");
-    node->cond = expr();
+    node->cond = expr(locals);
     expect_punct(";");
-    node->inc = expr();
+    node->inc = expr(locals);
     expect_punct(")");
     node->then = stmt();
   } else if (consume_punct("{")) {
     node = block();
   } else {  // 末尾に ; が必要な文
     if (consume_keyword("return")) {
-      node = new_node_unitary(ND_RETURN, expr());
+      node = new_node_unitary(ND_RETURN, expr(locals));
     } else if (consume_keyword("int")) {
       Token *tok = expect_ident();
       node = new_node(ND_VARDEF);
-      LVar *lvar = find_lvar(tok);
+      LVar *lvar = find_lvar(locals, tok);
       if (lvar) {
         error_at(tok->str, "%s is already defined", lvar->name);
       }
@@ -258,7 +243,7 @@ Node *stmt() {
       locals = lvar;
       node->offset = lvar->offset;
     } else {
-      node = new_node_unitary(ND_EXPR_STMT, expr());
+      node = new_node_unitary(ND_EXPR_STMT, expr(locals));
     }
     expect_punct(";");
   }
@@ -266,95 +251,95 @@ Node *stmt() {
   return node;
 }
 
-Node *expr() {
-  Node *node = assign();
+Node *expr(LVar *locals) {
+  Node *node = assign(locals);
   return node;
 }
 
-Node *assign() {
-  Node *node = equality();
+Node *assign(LVar *locals) {
+  Node *node = equality(locals);
   if (consume_punct("=")) node = new_node_binary(ND_ASSIGN, node, assign());
   return node;
 }
 
-Node *equality() {
-  Node *node = relational();
+Node *equality(LVar *locals) {
+  Node *node = relational(locals);
 
   for (;;) {
     if (consume_punct("=="))
-      node = new_node_binary(ND_EQ, node, add());
+      node = new_node_binary(ND_EQ, node, add(locals));
     else if (consume_punct("!="))
-      node = new_node_binary(ND_NE, node, add());
+      node = new_node_binary(ND_NE, node, add(locals));
     else
       return node;
   }
 }
 
-Node *relational() {
-  Node *node = add();
+Node *relational(LVar *locals) {
+  Node *node = add(locals);
 
   for (;;) {
     if (consume_punct("<"))
-      node = new_node_binary(ND_LT, node, add());
+      node = new_node_binary(ND_LT, node, add(locals));
     else if (consume_punct("<="))
-      node = new_node_binary(ND_LE, node, add());
+      node = new_node_binary(ND_LE, node, add(locals));
     else if (consume_punct(">"))
-      node = new_node_binary(ND_LT, add(), node);
+      node = new_node_binary(ND_LT, add(locals), node);
     else if (consume_punct(">="))
-      node = new_node_binary(ND_LE, add(), node);
+      node = new_node_binary(ND_LE, add(locals), node);
     else
       return node;
   }
 }
 
-Node *add() {
-  Node *node = mul();
+Node *add(LVar *locals) {
+  Node *node = mul(locals);
 
   for (;;) {
     if (consume_punct("+"))
-      node = new_node_binary(ND_ADD, node, mul());
+      node = new_node_binary(ND_ADD, node, mul(locals));
     else if (consume_punct("-"))
-      node = new_node_binary(ND_SUB, node, mul());
+      node = new_node_binary(ND_SUB, node, mul(locals));
     else
       return node;
   }
 }
 
-Node *mul() {
-  Node *node = unary();
+Node *mul(LVar *locals) {
+  Node *node = unary(locals);
 
   for (;;) {
     if (consume_punct("*"))
-      node = new_node_binary(ND_MUL, node, unary());
+      node = new_node_binary(ND_MUL, node, unary(locals));
     else if (consume_punct("/"))
-      node = new_node_binary(ND_DIV, node, unary());
+      node = new_node_binary(ND_DIV, node, unary(locals));
     else if (consume_punct("%"))
-      node = new_node_binary(ND_RMD, node, unary());
+      node = new_node_binary(ND_RMD, node, unary(locals));
     else
       return node;
   }
 }
 
-Node *unary() {
+Node *unary(LVar *locals) {
   if (consume_punct("+"))
-    return primary();
+    return primary(locals);
   else if (consume_punct("-")) {
     Node *zero_node = new_node(ND_NUM);
     zero_node->val = 0;
-    return new_node_binary(ND_SUB, zero_node, primary());
+    return new_node_binary(ND_SUB, zero_node, primary(locals));
   } else if (consume_punct("&")) {
-    return new_node_unitary(ND_ADDR, unary());
+    return new_node_unitary(ND_ADDR, unary(locals));
   } else if (consume_punct("*")) {
-    return new_node_unitary(ND_DEREF, expr());
+    return new_node_unitary(ND_DEREF, expr(locals));
   } else
-    return primary();
+    return primary(locals);
 }
 
-Node *primary() {
+Node *primary(LVar *locals) {
   Node *node;
 
   if (consume_punct("(")) {
-    node = expr();
+    node = expr(locals);
     expect_punct(")");
     return node;
   }
@@ -368,7 +353,7 @@ Node *primary() {
       Node *vector = node;
       if (!consume_punct(")")) {
         for (;;) {
-          vector->next_arg = expr();
+          vector->next_arg = expr(locals);
           vector = vector->next_arg;
           if (consume_punct(")"))
             break;
@@ -378,7 +363,7 @@ Node *primary() {
       }
     } else {
       node = new_node(ND_LVAR);
-      LVar *lvar = find_lvar(tok);
+      LVar *lvar = find_lvar(locals, tok);
       if (!lvar) {
         error_at(tok->str, "%s undeclared", cut_ident_name(tok));
       }
