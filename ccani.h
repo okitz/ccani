@@ -97,7 +97,7 @@ Node *block();
 Node *stmt();
 Node *expr();
 Node *assign();
-Node *expr();
+Node *declarator();
 Node *equality();
 Node *relational();
 Node *add();

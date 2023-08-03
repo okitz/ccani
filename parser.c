@@ -10,8 +10,9 @@
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //            | "return" expr ";"
-//            | "int" ident ";"
+//            | "int" declarator ";"
 //            | "{" block
+// declarator = ("*")* ("(" ident ")" | "(" declarator ")" | ident)
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -21,7 +22,7 @@
 // unary = "+"? primary
 //       | "-"? primary
 //       | "&" unary
-//       | "*" expr
+//       | "*" unary
 // primary    = num | ident ("(" (expr (","expr)* )? ")")? | "(" expr ")"
 //
 
@@ -30,7 +31,7 @@ typedef struct LVar LVar;
 
 struct Type {
   enum { INT, PTR } ty;
-  struct Type *ptr_to;
+  Type *ptr_to;
 };
 
 struct LVar {
@@ -38,7 +39,7 @@ struct LVar {
   char *name;  // 変数名;
   int len;     // 名前の長さ
   int offset;  // rbpからのオフセット
-  Type type;
+  Type *type;
 };
 
 LVar *locals;
@@ -249,25 +250,40 @@ Node *stmt() {
     if (consume_keyword("return")) {
       node = new_node_unitary(ND_RETURN, expr());
     } else if (consume_keyword("int")) {
-      Token *tok = expect_ident();
-      node = new_node(ND_VARDEF);
-      LVar *lvar = find_lvar(tok);
-      if (lvar) {
-        error_at(tok->str, "%s is already defined", lvar->name);
-      }
-      lvar = calloc(1, sizeof(LVar));
-      lvar->next = locals;
-      lvar->name = cut_ident_name(tok);
-      lvar->len = tok->len;
-      lvar->offset = locals ? (locals->offset + 8) : 8;
-      locals = lvar;
-      node->offset = lvar->offset;
+      node = declarator();
     } else {
       node = new_node_unitary(ND_EXPR_STMT, expr());
     }
     expect_punct(";");
   }
 
+  return node;
+}
+
+Node *declarator() {
+  Node *node = new_node(ND_VARDEF);
+  Type *type = calloc(1, sizeof(Type));
+  type->ty = INT;
+  while (consume_punct("*")) {
+    Type *ty = calloc(1, sizeof(Type));
+    ty->ty = PTR;
+    ty->ptr_to = type;
+    type = ty;
+  }
+
+  Token *tok = expect_ident();
+  LVar *lvar = find_lvar(tok);
+  if (lvar) {
+    error_at(tok->str, "%s is already defined", lvar->name);
+  }
+  lvar = calloc(1, sizeof(LVar));
+  lvar->next = locals;
+  lvar->name = cut_ident_name(tok);
+  lvar->len = tok->len;
+  lvar->type = type;
+  lvar->offset = locals ? (locals->offset + 8) : 8;
+  locals = lvar;
+  node->offset = lvar->offset;
   return node;
 }
 
@@ -346,11 +362,12 @@ Node *unary() {
   else if (consume_punct("-")) {
     Node *zero_node = new_node(ND_NUM);
     zero_node->val = 0;
+
     return new_node_binary(ND_SUB, zero_node, primary());
   } else if (consume_punct("&")) {
     return new_node_unitary(ND_ADDR, unary());
   } else if (consume_punct("*")) {
-    return new_node_unitary(ND_DEREF, expr());
+    return new_node_unitary(ND_DEREF, unary());
   } else
     return primary();
 }

@@ -15,23 +15,27 @@ void error(char *fmt, ...) {
 void println(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  printf(fmt, ap);
-  printf("\n");
+  vfprintf(stdout, fmt, ap);
+  va_end(ap);
+  fprintf(stdout, "\n");
 }
 
 void gen_lval(Node *node) {
-  if (node->kind != ND_LVAR)
+  if (node->kind == ND_LVAR) {
+    println("  mov rax, rbp");
+    println("  sub rax, %d", node->offset);
+    println("  push rax");
+  } else if (node->kind == ND_DEREF) {
+    gen(node->lhs);
+  } else {
     error("lvalue required as left operand of assignment");
-
-  println("  mov rax, rbp");
-  printf("  sub rax, %d\n", node->offset);
-  println("  push rax");
+  }
 }
 
 void gen(Node *node) {
   switch (node->kind) {
     case ND_FUNDEF:
-      printf("%s:\n", node->fname);
+      println("%s:", node->fname);
 
       // Prologue
       // 変数26個分の領域を確保
@@ -68,6 +72,7 @@ void gen(Node *node) {
 
       // exprの返り値をスタックから削除しておく
       println("  pop rax");
+      return;
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
@@ -75,7 +80,7 @@ void gen(Node *node) {
       gen_lval(node->lhs);
       return;
     case ND_DEREF:
-      gen(node->lhs);
+      gen_lval(node);
       println("  pop rax");
       println("  mov rax, [rax]");
       println("  push rax");
