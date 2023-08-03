@@ -45,7 +45,6 @@ LVar *locals;
 
 // 変数を名前で検索し、見つからなければNULLを返す
 LVar *find_lvar(Token *tok) {
-  LVar *lvar = locals;
   for (LVar *lvar = locals; lvar; lvar = lvar->next) {
     if (lvar->len == tok->len && !memcmp(tok->str, lvar->name, lvar->len))
       return lvar;
@@ -169,6 +168,8 @@ Node *func() {
 
   // 引数
   expect_punct("(");
+  LVar *parent_locals = locals;
+
   if (!consume_punct(")")) {
     for (int i = 0; i < 6; i++) {
       Token *arg = expect_ident();
@@ -177,7 +178,6 @@ Node *func() {
         error_at(tok->str, "%s is already defined", lvar->name);
       }
 
-      // これおかしい (local variableではないので)
       lvar = calloc(1, sizeof(LVar));
       lvar->next = locals;
       lvar->name = cut_ident_name(arg);
@@ -196,16 +196,21 @@ Node *func() {
   expect_punct("{");
   node->funcbody = block();
 
+  locals = parent_locals;
   return node;
 }
 
 Node *block() {
   Node *node = new_node(ND_BLOCK);
+  LVar *parent_locals = locals;
+
   int i = 0;
   while (!consume_punct("}")) {
     node->code[i++] = stmt();
   }
   node->code[i] = NULL;
+
+  locals = parent_locals;
   return node;
 }
 

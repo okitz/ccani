@@ -37,6 +37,8 @@ assert 11 'int main(){return foo(34, 23);}'
 
 assert 5 'int main(){return sub(3)+2;} int sub(x){return x;}'
 
+# assert 11 'int main(){for(int i=0;i<10;i++)i++; return i;}'
+
 # assert 18 'int main(){ return gcd(90, 144); } int gcd(a, b){ if(b == 0)return a; else return gcd(b, a%b); }'
 
 assert 3 'int main(){int x;int y;int z;x = 3; y = 5; z = &y + 8;return *z;}' 
